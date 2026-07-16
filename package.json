@@ -1,0 +1,30 @@
+{
+  "name": "async-user-profile-service",
+  "version": "1.0.0",
+  "description": "User Profile Service with Asynchronous Processing using Node.js, RabbitMQ, and MySQL",
+  "main": "src/api/server.js",
+  "scripts": {
+    "start:api": "node src/api/server.js",
+    "start:consumer": "node src/consumer/index.js",
+    "dev:api": "nodemon src/api/server.js",
+    "dev:consumer": "nodemon src/consumer/index.js",
+    "test": "jest --runInBand --detectOpenHandles"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.3",
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.4.1",
+    "express": "^4.18.2",
+    "joi": "^17.12.0",
+    "mysql2": "^3.9.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.3",
+    "supertest": "^6.3.4"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "verbose": true
+  }
+}

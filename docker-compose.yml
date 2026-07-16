@@ -1,0 +1,87 @@
+version: "3.8"
+
+services:
+  db:
+    image: mysql:8
+    container_name: profile_db_container
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: profile_db
+      MYSQL_USER: profile_user
+      MYSQL_PASSWORD: profile_password
+      MYSQL_ROOT_PASSWORD: root_password
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+    networks:
+      - profile-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "profile_user", "-pprofile_password"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: profile_rabbitmq_container
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - profile-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    container_name: profile_api_container
+    command: npm run start:api
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: profile_user
+      DB_PASSWORD: profile_password
+      DB_NAME: profile_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - profile-network
+
+  consumer:
+    build: .
+    container_name: profile_consumer_container
+    command: npm run start:consumer
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: profile_user
+      DB_PASSWORD: profile_password
+      DB_NAME: profile_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - profile-network
+
+volumes:
+  mysql_data:
+
+networks:
+  profile-network:
+    driver: bridge
