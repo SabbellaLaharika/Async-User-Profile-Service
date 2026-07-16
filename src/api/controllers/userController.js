@@ -90,16 +90,27 @@ class UserController {
     }
   }
 
-  // PUT /api/users/:id/request-update (placeholder for Phase 4)
+  // PUT /api/users/:id/request-update
   async requestUpdate(req, res, next) {
     try {
-      const { error } = requestUpdateSchema.validate(req.body);
+      const { id } = req.params;
+      const { error, value } = requestUpdateSchema.validate(req.body);
       if (error) {
         return res.status(400).json({ error: error.details[0].message });
       }
 
-      // To be implemented in Phase 4
-      return res.status(501).json({ message: 'Not Implemented Yet' });
+      const { newEmail, newPreferences } = value;
+
+      const payload = {
+        userId: id,
+        newEmail,
+        newPreferences
+      };
+
+      const messageQueueService = require('../../services/MessageQueueService');
+      await messageQueueService.publish('profile_update_queue', payload);
+
+      return res.status(202).json({ message: 'Update request accepted' });
     } catch (err) {
       next(err);
     }

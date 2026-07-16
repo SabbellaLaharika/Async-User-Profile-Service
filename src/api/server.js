@@ -11,6 +11,10 @@ async function startServer() {
     console.log('Database connection established successfully.');
     connection.release();
 
+    // Establish RabbitMQ connection on startup
+    const mqService = require('../services/MessageQueueService');
+    await mqService.connect();
+
     app.listen(PORT, () => {
       console.log(`API Server is running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode.`);
     });
