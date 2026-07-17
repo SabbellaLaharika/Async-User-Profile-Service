@@ -17,7 +17,7 @@ services:
     networks:
       - profile-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "profile_user", "-pprofile_password"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
       interval: 5s
       timeout: 5s
       retries: 10
