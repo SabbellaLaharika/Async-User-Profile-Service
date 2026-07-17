@@ -75,9 +75,6 @@ class UserRepository {
     }
     if (updatedData.preferences !== undefined) {
       fields.push('preferences = ?');
-      // Merge preferences or overwrite depending on preference. The spec says "newPreferences (object)".
-      // Typically, we save the object directly or merge it. Let's overwrite / store it as new preferences.
-      fields.push('preferences = ?');
       values.push(JSON.stringify(updatedData.preferences));
     }
 

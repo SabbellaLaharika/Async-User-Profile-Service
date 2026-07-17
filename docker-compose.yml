@@ -5,7 +5,7 @@ services:
     image: mysql:8
     container_name: profile_db_container
     ports:
-      - "3306:3306"
+      - "3307:3306"
     environment:
       MYSQL_DATABASE: profile_db
       MYSQL_USER: profile_user
