@@ -54,6 +54,43 @@ describe('UserRepository Unit Tests', () => {
     });
   });
 
+  describe('findByEmail', () => {
+    it('should query by email and return user', async () => {
+      mockDb.query.mockResolvedValueOnce([[{ id: '1', name: 'Alice', email: 'alice@example.com', preferences: '{"theme":"dark"}' }]]);
+
+      const result = await userRepository.findByEmail('alice@example.com');
+
+      expect(mockDb.query).toHaveBeenCalledWith('SELECT id, name, email, preferences, created_at, updated_at FROM users WHERE email = ?', ['alice@example.com']);
+      expect(result).toEqual({ id: '1', name: 'Alice', email: 'alice@example.com', preferences: { theme: 'dark' } });
+    });
+
+    it('should return null when email is not found', async () => {
+      mockDb.query.mockResolvedValueOnce([[]]);
+      const result = await userRepository.findByEmail('none@example.com');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findByEmailExceptUser', () => {
+    it('should query for existing email excluding specified user ID', async () => {
+      mockDb.query.mockResolvedValueOnce([[{ id: '2', name: 'Bob', email: 'bob@example.com' }]]);
+
+      const result = await userRepository.findByEmailExceptUser('bob@example.com', '1');
+
+      expect(mockDb.query).toHaveBeenCalledWith(
+        'SELECT id, name, email FROM users WHERE email = ? AND id != ?',
+        ['bob@example.com', '1']
+      );
+      expect(result).toEqual({ id: '2', name: 'Bob', email: 'bob@example.com' });
+    });
+
+    it('should return null when no other user shares the email', async () => {
+      mockDb.query.mockResolvedValueOnce([[]]);
+      const result = await userRepository.findByEmailExceptUser('bob@example.com', '2');
+      expect(result).toBeNull();
+    });
+  });
+
   describe('create', () => {
     it('should execute INSERT query and return user object without password_hash', async () => {
       mockDb.query.mockResolvedValueOnce([]); // insert execution

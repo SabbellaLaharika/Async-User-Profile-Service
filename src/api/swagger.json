@@ -1,0 +1,229 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Asynchronous User Profile Service API",
+    "version": "1.0.0",
+    "description": "Interactive API documentation for the Asynchronous User Profile Service. Demonstrates synchronous user profile CRUD and asynchronous non-blocking updates via RabbitMQ."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local API Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Users",
+      "description": "User profile management and asynchronous queue dispatching"
+    }
+  ],
+  "paths": {
+    "/api/users": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Create a new user profile (Synchronous)",
+        "description": "Hashes the password with bcrypt and synchronously stores the user record in MySQL. The password_hash is omitted from the response.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Sarah Connor"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "sarah.connor@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "StrongPassword123!"
+                  },
+                  "preferences": {
+                    "type": "object",
+                    "example": {
+                      "theme": "dark",
+                      "notifications": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "example": "e4c3a5e8-1111-4444-9999-666666666661" },
+                    "name": { "type": "string", "example": "Sarah Connor" },
+                    "email": { "type": "string", "example": "sarah.connor@example.com" },
+                    "preferences": { "type": "object", "example": { "theme": "dark", "notifications": true } }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or duplicate email"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Users"],
+        "summary": "Retrieve paginated list of user profiles (Synchronous)",
+        "description": "Returns a paginated array of sanitized user objects along with the total user count.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number (defaults to 1)",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of users per page (defaults to 10)",
+            "schema": { "type": "integer", "default": 10 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated users list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "users": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "email": { "type": "string" },
+                          "preferences": { "type": "object" },
+                          "created_at": { "type": "string" },
+                          "updated_at": { "type": "string" }
+                        }
+                      }
+                    },
+                    "total": { "type": "integer", "example": 4 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get user profile by ID (Synchronous)",
+        "description": "Retrieves a specific user profile by their unique ID.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "User unique identifier (UUID)",
+            "schema": { "type": "string", "example": "a2c3a5e8-1111-4444-9999-666666666661" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "email": { "type": "string" },
+                    "preferences": { "type": "object" },
+                    "created_at": { "type": "string" },
+                    "updated_at": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/request-update": {
+      "put": {
+        "tags": ["Users"],
+        "summary": "Request asynchronous profile update (Asynchronous / Non-Blocking)",
+        "description": "Publishes an update event to RabbitMQ's durable queue (`profile_update_queue`) and returns HTTP 202 Accepted immediately. The background worker consumer asynchronously validates uniqueness and commits changes to MySQL.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "User unique identifier (UUID)",
+            "schema": { "type": "string", "example": "a2c3a5e8-1111-4444-9999-666666666661" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "newEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "sarah.updated@example.com"
+                  },
+                  "newPreferences": {
+                    "type": "object",
+                    "example": {
+                      "theme": "light",
+                      "notifications": false
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Update request accepted and queued in RabbitMQ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Update request accepted" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request or invalid data format"
+          }
+        }
+      }
+    }
+  }
+}

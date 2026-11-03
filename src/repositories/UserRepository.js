@@ -46,6 +46,32 @@ class UserRepository {
     };
   }
 
+  // Retrieves a user by email
+  async findByEmail(email) {
+    const [rows] = await this.db.query(
+      'SELECT id, name, email, preferences, created_at, updated_at FROM users WHERE email = ?',
+      [email]
+    );
+
+    if (rows.length === 0) return null;
+
+    const user = rows[0];
+    return {
+      ...user,
+      preferences: typeof user.preferences === 'string' ? JSON.parse(user.preferences) : user.preferences
+    };
+  }
+
+  // Finds if an email is already associated with another user (excluding a specific user ID)
+  async findByEmailExceptUser(email, userId) {
+    const [rows] = await this.db.query(
+      'SELECT id, name, email FROM users WHERE email = ? AND id != ?',
+      [email, userId]
+    );
+
+    return rows.length > 0 ? rows[0] : null;
+  }
+
   // Inserts a new user record
   async create(userData) {
     const { id, name, email, password_hash, preferences } = userData;

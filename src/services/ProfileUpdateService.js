@@ -20,13 +20,10 @@ class ProfileUpdateService {
     // 2. Handle email update and uniqueness verification
     if (updateData.newEmail) {
       const email = updateData.newEmail.trim().toLowerCase();
-      // Check if email is already in use by another user
-      const [rows] = await pool.query(
-        'SELECT id FROM users WHERE email = ? AND id != ?',
-        [email, userId]
-      );
+      // Check if email is already in use by another user via UserRepository
+      const existingUser = await userRepository.findByEmailExceptUser(email, userId);
 
-      if (rows.length > 0) {
+      if (existingUser) {
         throw new Error(`Email ${email} is already in use by another user.`);
       }
       payload.email = email;

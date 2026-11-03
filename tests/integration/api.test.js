@@ -61,6 +61,15 @@ beforeAll(async () => {
       return mockDbStore.get(id) || null;
     });
 
+    jest.spyOn(UserRepository.prototype, 'findByEmailExceptUser').mockImplementation(async (email, userId) => {
+      for (const user of mockDbStore.values()) {
+        if (user.email === email && user.id !== userId) {
+          return user;
+        }
+      }
+      return null;
+    });
+
     jest.spyOn(UserRepository.prototype, 'findAll').mockImplementation(async (page = 1, limit = 10) => {
       const users = Array.from(mockDbStore.values());
       const offset = (page - 1) * limit;
