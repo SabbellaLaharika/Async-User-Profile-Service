@@ -59,36 +59,59 @@ The application is orchestrated across four isolated Docker containers within a 
 ## 🔄 End-to-End Execution Flow
 
 ```mermaid
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#eff6ff',
+    'primaryTextColor': '#1e3a8a',
+    'primaryBorderColor': '#3b82f6',
+    'lineColor': '#2563eb',
+    'secondaryColor': '#f0fdf4',
+    'tertiaryColor': '#fff7ed',
+    'noteBkgColor': '#1e293b',
+    'noteTextColor': '#ffffff',
+    'noteBorderColor': '#334155',
+    'actorBkg': '#f8fafc',
+    'actorTextColor': '#0f172a',
+    'actorBorder': '#3b82f6',
+    'signalColor': '#1d4ed8',
+    'signalTextColor': '#0f172a',
+    'labelBoxBkgColor': '#dbeafe',
+    'labelBoxBorderColor': '#3b82f6',
+    'labelTextColor': '#1e3a8a',
+    'sequenceNumberColor': '#ffffff'
+  }
+}}%%
 sequenceDiagram
     autonumber
-    actor Client
-    participant API as Express API Server
-    participant Broker as RabbitMQ Broker
-    participant Consumer as Background Worker
-    participant Repo as UserRepository
-    participant DB as MySQL Database
+    actor Client as 👤 Client
+    participant API as 🚀 Express API Server
+    participant Broker as 📬 RabbitMQ Broker
+    participant Consumer as ⚙️ Background Worker
+    participant Repo as 📦 UserRepository
+    participant DB as 🗄️ MySQL Database
 
-    rect rgb(30, 35, 45)
-    Note over Client, DB: Synchronous User Profile Creation / Retrieval
+    rect rgb(238, 242, 255)
+    Note over Client, DB: 🔹 Phase 1: Synchronous User Creation & Retrieval
     Client->>API: POST /api/users (name, email, password)
     API->>Repo: create(userData)
     Repo->>DB: INSERT INTO users ...
     DB-->>Repo: Saved Record
-    Repo-->>API: Sanitized User (no password_hash)
-    API-->>Client: 201 Created
+    Repo-->>API: Sanitized User (password_hash omitted)
+    API-->>Client: HTTP 201 Created
     end
 
-    rect rgb(25, 45, 35)
-    Note over Client, DB: Asynchronous Profile Update Request Flow
+    rect rgb(236, 253, 245)
+    Note over Client, DB: 🟢 Phase 2: Asynchronous Update Request (Non-Blocking ~15ms)
     Client->>API: PUT /api/users/:id/request-update
     API->>API: Validate Joi schema
     API->>Broker: publish('profile_update_queue', payload)
     Broker-->>API: Message Buffered
-    API-->>Client: 202 Accepted (Immediate Non-Blocking)
+    API-->>Client: HTTP 202 Accepted (Immediate Response)
     end
 
-    rect rgb(35, 30, 45)
-    Note over Broker, DB: Background Consumer Processing
+    rect rgb(254, 243, 199)
+    Note over Client, DB: 🟠 Phase 3: Background Worker Processing & Persistence
     Broker->>Consumer: Deliver Message (prefetch: 1)
     Consumer->>Repo: findById(userId)
     Repo->>DB: SELECT * FROM users WHERE id = ?
